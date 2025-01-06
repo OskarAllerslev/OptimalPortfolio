@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import cvxpy as cp
 from cvxpy.atoms.affine.wraps import psd_wrap
+import matplotlib.pyplot as plt
 
 # ------------------------------------------------------
 # 1. Define UCITS Tickers (no 'BAC' or 'F', etc.)
@@ -154,3 +155,45 @@ for asset, weight in zip(chosen_assets, chosen_weights):
 
 print(f"\nSum of chosen weights = {sum(chosen_weights):.4f}")
 print(f"Number of chosen assets = {len(chosen_assets)}")
+
+# ------------------------------------------------------
+# 8. Display assets and portfolio
+# ------------------------------------------------------
+
+import matplotlib.cm as cm
+
+# Retrieve data for the chosen assets
+chosen_data = monthly_data[chosen_assets]
+
+# Normalize data to start from 1 for comparison
+normalized_data = chosen_data / chosen_data.iloc[0]
+spy_normalized = spy_monthly / spy_monthly.iloc[0]
+
+# Calculate portfolio values
+portfolio_values = (chosen_data * np.array(chosen_weights)).sum(axis=1)
+portfolio_normalized = portfolio_values / portfolio_values.iloc[0]
+
+# Create a color map
+color_map = cm.Blues(np.linspace(0.4, 0.9, len(chosen_assets)))
+
+# Plot individual chosen assets
+plt.figure(figsize=(12, 6))
+for i, asset in enumerate(chosen_assets):
+    plt.plot(normalized_data.index, normalized_data[asset], label=asset, color=color_map[i])
+
+# Plot the portfolio as a weighted sum of the chosen assets
+plt.plot(portfolio_normalized.index, portfolio_normalized, label="Portfolio (Weighted)", color="green", linewidth=2.5)
+
+# Plot SPY
+plt.plot(spy_normalized.index, spy_normalized, label="SPY (Benchmark)", color="orange", linewidth=2)
+
+# Add title and legend
+plt.title("Chosen Assets, Portfolio Performance, and SPY (Normalized)", fontsize=14)
+plt.xlabel("Date", fontsize=12)
+plt.ylabel("Normalized Value", fontsize=12)
+plt.legend(fontsize=10)
+plt.grid(alpha=0.5)
+plt.tight_layout()
+
+# Show the plot
+plt.show()
