@@ -5,49 +5,44 @@ import streamlit as st
 
 def plot_portfolio_vs_spy(daily_data, spy_data, chosen_assets, chosen_weights):
     """
-    Plot normalized performance of the chosen portfolio vs SPY.
+    Plot normalized performance of the chosen portfolio vs SPY using daily data.
     """
-    chosen_data_daily = daily_data[chosen_assets].dropna()
+    chosen_data_daily = daily_data[chosen_assets].dropna(how="any")
     spy_data_daily = spy_data.dropna()
 
-    normalized_chosen_data_daily = chosen_data_daily / chosen_data_daily.iloc[0]
-    normalized_spy_data_daily = spy_data_daily / spy_data_daily.iloc[0]
+    if len(chosen_data_daily) == 0 or len(spy_data_daily) == 0:
+        st.write("Not enough data to plot. Possibly due to missing daily data.")
+        return
 
-    # Daily portfolio performance with the chosen weights
-    portfolio_values_daily = (normalized_chosen_data_daily * np.array(chosen_weights)).sum(axis=1)
+    # Normalize
+    chosen_data_daily_norm = chosen_data_daily / chosen_data_daily.iloc[0]
+    spy_data_daily_norm = spy_data_daily / spy_data_daily.iloc[0]
 
-    # Create the figure
-    fig, ax = plt.subplots(figsize=(14, 8))
+    # Weighted portfolio series
+    portfolio_values_daily = (chosen_data_daily_norm * np.array(chosen_weights)).sum(axis=1)
+
+    fig, ax = plt.subplots(figsize=(12, 6))
 
     # Plot each chosen asset
+    colors = cm.Blues(np.linspace(0.4, 0.9, len(chosen_assets)))
     for i, asset in enumerate(chosen_assets):
         ax.plot(
-            normalized_chosen_data_daily.index, 
-            normalized_chosen_data_daily[asset],
-            label=asset, 
-            color=cm.Blues(np.linspace(0.4, 0.9, len(chosen_assets)))[i]
+            chosen_data_daily_norm.index, 
+            chosen_data_daily_norm[asset], 
+            label=asset,
+            color=colors[i]
         )
 
-    # Plot portfolio & SPY
-    ax.plot(
-        portfolio_values_daily.index, 
-        portfolio_values_daily, 
-        label="Portfolio (Weighted)", 
-        color="green", 
-        linewidth=2.5
-    )
-    ax.plot(
-        normalized_spy_data_daily.index, 
-        normalized_spy_data_daily, 
-        label="SPY (Benchmark)", 
-        color="orange", 
-        linewidth=2
-    )
+    # Plot portfolio and SPY
+    ax.plot(portfolio_values_daily.index, portfolio_values_daily, 
+            label="Portfolio (Weighted)", color="green", linewidth=2.2)
+    ax.plot(spy_data_daily_norm.index, spy_data_daily_norm, 
+            label="SPY (Benchmark)", color="orange", linewidth=2)
 
-    ax.set_title("Portfolio and SPY Performance (Daily Normalized)", fontsize=14)
-    ax.set_xlabel("Date", fontsize=12)
-    ax.set_ylabel("Normalized Value", fontsize=12)
-    ax.legend(fontsize=10)
-    ax.grid(alpha=0.5)
+    ax.set_title("Portfolio vs SPY (Normalized)")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Normalized Value")
+    ax.legend()
+    ax.grid(alpha=0.3)
 
     st.pyplot(fig)
